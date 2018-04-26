@@ -2,7 +2,7 @@
 use syn;
 use quote;
 
-fn find_command_name_from_derive_input(ast: &syn::DeriveInput) -> Option<String> {
+fn find_command_name_from_derive_input(ast: &syn::DeriveInput) -> String {
 	let attrs = &ast.attrs;
 
 	for attr in attrs {
@@ -11,7 +11,7 @@ fn find_command_name_from_derive_input(ast: &syn::DeriveInput) -> Option<String>
 				continue;
 			}
 			if let &syn::Lit::Str(ref string, _) = value {
-				return Some(string.to_string())
+				return string.to_string()
 			}
 		}
 	}
@@ -20,13 +20,17 @@ fn find_command_name_from_derive_input(ast: &syn::DeriveInput) -> Option<String>
 
 pub fn impl_base_command_on(ast: &syn::DeriveInput) -> quote::Tokens {
 	let name = &ast.ident;
-	let command_name = find_command_name_from_derive_input(ast);
 	if let syn::Body::Struct(_) = ast.body {
+		let command_name = find_command_name_from_derive_input(ast);
+
 		quote! {
 			impl BaseCommand for #name {
 				fn on(arguments: Vec<&str>, handler: Box<Fn(Vec<String>, String, String, bool) -> Option<String>>) {
-					println!("Woah we're a thing! {:?} {}", arguments, stringify!(#name));
 					handler(vec! [String::from("Test")], "testing".to_string(), "channel".to_string(), true);
+				}
+
+				fn command_name() -> &'static str {
+					return stringify!(#command_name);
 				}
 			}
 		}

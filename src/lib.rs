@@ -9,7 +9,7 @@ extern crate quote;
 
 use proc_macro::TokenStream;
 
-#[proc_macro_derive(BaseCommand, attributes(CommandName))]
+#[proc_macro_derive(BaseCommand, attributes(CommandName, SubCommands))]
 pub fn on(input: TokenStream) -> TokenStream {
 	let name = input.to_string();
 	let ast = syn::parse_derive_input(&name).unwrap();
