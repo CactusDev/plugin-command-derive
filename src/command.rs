@@ -2,26 +2,39 @@
 use syn;
 use quote;
 
-fn find_command_name_from_derive_input(ast: &syn::DeriveInput) -> String {
-	let attrs = &ast.attrs;
+use std::collections::HashMap;
+use std::vec::Vec;
 
+fn get_command_attributes(ast: &syn::DeriveInput) -> HashMap<String, String> {
+	let mut attributes: HashMap<String, String> = HashMap::new();
+	let our_attributes: Vec<&str> = vec! ["CommandName", "SubCommands"];
+
+	let attrs = &ast.attrs;
 	for attr in attrs {
 		if let syn::MetaItem::NameValue(ref name, ref value) = attr.value {
-			if name != "CommandName" {
-				continue;
-			}
 			if let &syn::Lit::Str(ref string, _) = value {
-				return string.to_string()
+
+				if !our_attributes.contains(&name.as_ref()) {
+					// We don't care about this attribute
+					continue
+				}
+				attributes.insert(name.to_string(), string.to_string());
 			}
 		}
 	}
-	panic!("Must specify the command's name: #[CommandName = \"name_here\"]")
+	attributes
 }
 
 pub fn impl_base_command_on(ast: &syn::DeriveInput) -> quote::Tokens {
 	let name = &ast.ident;
 	if let syn::Body::Struct(_) = ast.body {
-		let command_name = find_command_name_from_derive_input(ast);
+		let (command_name, subcommands) = {
+			let result = get_command_attributes(ast);
+
+			let name = result.get("CommandName").unwrap_or(&"".to_string()).to_string();
+			let sub = result.get("SubCommands").unwrap_or(&"".to_string()).to_string();
+			(name, sub)
+		};
 
 		quote! {
 			impl BaseCommand for #name {
